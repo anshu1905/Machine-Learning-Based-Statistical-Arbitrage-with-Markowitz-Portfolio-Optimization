@@ -2,7 +2,6 @@
 features_by_stock.xlsx
 data/*.parquet
 0*/data/
-0*/results/
 logs/
 __pycache__/
 .DS_Store

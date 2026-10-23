@@ -1,0 +1,136 @@
+{
+  "model": "ElasticNet",
+  "val": {
+    "n_dates": 349,
+    "n_rows": 83062,
+    "ic_mean": 0.10660368034190322,
+    "ic_std": 0.14775191002656538,
+    "ic_tstat_nw": 3.7875653152667352,
+    "icir_ann": 2.561087208800295,
+    "ic_hit_rate": 0.7965616045845272,
+    "q5_minus_q1_20d": 0.03797863286605727,
+    "q5_minus_q1_tstat_nw": 5.179709829411045,
+    "q5_minus_q1_ann_gross": 0.47853077411232164,
+    "ic_by_year": {
+      "2023": 0.1289,
+      "2024": 0.0533
+    }
+  },
+  "test": {
+    "n_dates": 513,
+    "n_rows": 122094,
+    "ic_mean": 0.0038074682724066663,
+    "ic_std": 0.12401491328102074,
+    "ic_tstat_nw": 0.20059969340288208,
+    "icir_ann": 0.10898021282393094,
+    "ic_hit_rate": 0.5555555555555556,
+    "q5_minus_q1_20d": 0.007309034118647396,
+    "q5_minus_q1_tstat_nw": 1.5896191662148962,
+    "q5_minus_q1_ann_gross": 0.09209382989495718,
+    "ic_by_year": {
+      "2024": 0.0177,
+      "2025": -0.0116,
+      "2026": 0.0189
+    }
+  },
+  "best_params": {
+    "alpha": 0.01,
+    "l1_ratio": 0.5,
+    "target": "y_win"
+  },
+  "mode": "wf",
+  "retrain_every": 63,
+  "window_years": null,
+  "nonzero_coefficients_last_refit": {
+    "ret_5d": -0.003389999968931079,
+    "mom_252d": 0.028627999126911163,
+    "dist_ma200": 0.010111000388860703,
+    "ma50_ma200_ratio": 0.012830999679863453,
+    "log_volume": 0.02184399962425232,
+    "log_traded_value_med_20d": -0.09003999829292297,
+    "volume_trend_20_60": 0.00596500001847744,
+    "price_volume_interaction": -0.0010689999908208847,
+    "gap_vol_20d": -0.007404000032693148,
+    "beta_120d": 0.0190069992095232,
+    "corr_60d": -0.0027459999546408653,
+    "variance_ratio_5_60": 0.008073000237345695,
+    "ret_autocorr_60d": 0.0034370000939816236,
+    "overnight_ret": 0.0028810000512748957,
+    "vol_ret_corr_20d": -0.0007149999728426337,
+    "adx_14": 0.011500000022351742
+  },
+  "walk_forward": [
+    {
+      "refit_date": "2024-07-01",
+      "predict_to": "2024-09-27",
+      "train_from": "2019-01-01",
+      "train_to": "2024-05-30",
+      "train_rows": 317953,
+      "seconds": 0.3
+    },
+    {
+      "refit_date": "2024-09-30",
+      "predict_to": "2024-12-31",
+      "train_from": "2019-01-01",
+      "train_to": "2024-08-30",
+      "train_rows": 332947,
+      "seconds": 0.3
+    },
+    {
+      "refit_date": "2025-01-01",
+      "predict_to": "2025-04-01",
+      "train_from": "2019-01-01",
+      "train_to": "2024-12-02",
+      "train_rows": 347941,
+      "seconds": 0.4
+    },
+    {
+      "refit_date": "2025-04-02",
+      "predict_to": "2025-07-03",
+      "train_from": "2019-01-01",
+      "train_to": "2025-02-28",
+      "train_rows": 362935,
+      "seconds": 0.4
+    },
+    {
+      "refit_date": "2025-07-04",
+      "predict_to": "2025-10-03",
+      "train_from": "2019-01-01",
+      "train_to": "2025-06-05",
+      "train_rows": 377929,
+      "seconds": 0.4
+    },
+    {
+      "refit_date": "2025-10-06",
+      "predict_to": "2026-01-05",
+      "train_from": "2019-01-01",
+      "train_to": "2025-09-04",
+      "train_rows": 392923,
+      "seconds": 0.3
+    },
+    {
+      "refit_date": "2026-01-06",
+      "predict_to": "2026-04-09",
+      "train_from": "2019-01-01",
+      "train_to": "2025-12-05",
+      "train_rows": 407917,
+      "seconds": 0.4
+    },
+    {
+      "refit_date": "2026-04-10",
+      "predict_to": "2026-07-13",
+      "train_from": "2019-01-01",
+      "train_to": "2026-03-09",
+      "train_rows": 422911,
+      "seconds": 0.4
+    },
+    {
+      "refit_date": "2026-07-14",
+      "predict_to": "2026-08-21",
+      "train_from": "2019-01-01",
+      "train_to": "2026-06-12",
+      "train_rows": 437905,
+      "seconds": 0.3
+    }
+  ]
+}
