@@ -1,0 +1,34 @@
+{
+  "model": "ridge",
+  "features": [
+    "log_traded_value_med_20d",
+    "vol_ret_corr_20d",
+    "price_volume_interaction",
+    "log_volume",
+    "mom_252d",
+    "adx_14",
+    "corr_60d",
+    "ma50_slope_20d",
+    "resid_ret_60d",
+    "ret_5d",
+    "intraday_return",
+    "trend_consistency_60d",
+    "mfi_14",
+    "overnight_gap_mean_20d",
+    "mom_accel_20d",
+    "overnight_ret",
+    "yz_vol_20d",
+    "gap_vol_20d",
+    "rel_volume_20d",
+    "volume_trend_20_60"
+  ],
+  "transform": "per-date winsorize 1/99% then z-score; NaN -> 0",
+  "target_default": "y_win",
+  "eval_target": "y_raw",
+  "params": {
+    "MIN_ABS_T": 0.5,
+    "MIN_SIGN_STABILITY": 0.5,
+    "CORR_THRESHOLD": 0.8,
+    "MAX_VIF": 5.0
+  }
+}

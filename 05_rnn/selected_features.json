@@ -1,0 +1,42 @@
+{
+  "model": "05 \u2014 RNN",
+  "features": [
+    "log_traded_value_med_20d",
+    "ma50_ma200_ratio",
+    "vol_ret_corr_20d",
+    "price_volume_interaction",
+    "log_volume",
+    "mom_252d",
+    "adx_14",
+    "corr_60d",
+    "intraday_return",
+    "overnight_ret",
+    "intraday_range",
+    "rel_volume_20d",
+    "r_b",
+    "bench_vol_20d",
+    "bench_mom_60d"
+  ],
+  "lookback": 20,
+  "core": [
+    "log_traded_value_med_20d",
+    "ma50_ma200_ratio",
+    "vol_ret_corr_20d",
+    "price_volume_interaction",
+    "log_volume",
+    "mom_252d",
+    "adx_14",
+    "corr_60d"
+  ],
+  "fast": [
+    "intraday_return",
+    "overnight_ret",
+    "intraday_range",
+    "rel_volume_20d"
+  ],
+  "market": [
+    "r_b",
+    "bench_vol_20d",
+    "bench_mom_60d"
+  ]
+}
