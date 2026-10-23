@@ -33,12 +33,12 @@ Prerequisite: `00_data_audit/REPORT.md`.
 | trend_consistency_60d    | 0.01022  | True           |  4.82e-05  |    0.0001863 |   0.01343   |          4 | True       |
 | rel_volume_20d           | 0.004651 | True           |  1.925e-05 |    2.26e-05  |  -0.002813  |          2 | True       |
 | bench_mom_120d           | 0.05372  | True           |  0         |    0         | nan         |        nan | True       |
-| bench_vol_20d            | 0.02291  | True           |  0         |    0         | nan         |        nan | True       |
-| r_b                      | 0.01741  | True           |  0         |    0         | nan         |        nan | True       |
-| bench_ret_20d            | 0.01544  | True           |  0         |    0         | nan         |        nan | True       |
 | bench_mom_60d            | 0.05454  | True           |  0         |    0         | nan         |        nan | True       |
 | bench_drawdown_252d      | 0.02347  | True           |  0         |    0         | nan         |        nan | True       |
 | bench_vol_60d            | 0.07125  | True           |  0         |    0         | nan         |        nan | True       |
+| bench_ret_20d            | 0.01544  | True           |  0         |    0         | nan         |        nan | True       |
+| bench_vol_20d            | 0.02291  | True           |  0         |    0         | nan         |        nan | True       |
+| r_b                      | 0.01741  | True           |  0         |    0         | nan         |        nan | True       |
 | overnight_ret            | 0.003792 | True           | -6.527e-06 |    0.0001048 |   0.002689  |          3 | False      |
 | ret_autocorr_60d         | 0.008236 | True           | -1.695e-05 |    0.0001998 |  -0.004788  |          3 | False      |
 | adx_14                   | 0.01421  | True           | -2.171e-05 |    0.0001901 |   0.02315   |          3 | False      |

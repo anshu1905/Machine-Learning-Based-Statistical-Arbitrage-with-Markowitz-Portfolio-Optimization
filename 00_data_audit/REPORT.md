@@ -100,8 +100,8 @@ Daily Spearman rank IC between each feature and the 20d excess return, averaged 
 | vol_adj_mom_60d          |    0.0169 |        1.0484 |     0.4154 |     0.5963 |                0.7500 |     3.0000 |             0.0010 |
 | trend_consistency_60d    |    0.0134 |        1.0028 |     0.4041 |     0.5695 |                1.0000 |     4.0000 |             0.0010 |
 | mfi_14                   |   -0.0093 |       -0.9479 |    -0.3139 |     0.5345 |                0.5000 |     3.0000 |             0.0006 |
-| mom_60d                  |    0.0151 |        0.9328 |     0.3667 |     0.5932 |                0.7500 |     3.0000 |             0.0010 |
 | rel_mom_60d              |    0.0151 |        0.9328 |     0.3667 |     0.5932 |                0.7500 |     2.0000 |             0.0010 |
+| mom_60d                  |    0.0151 |        0.9328 |     0.3667 |     0.5932 |                0.7500 |     3.0000 |             0.0010 |
 | rel_mom_20d              |   -0.0123 |       -0.8832 |    -0.3231 |     0.5005 |                0.7500 |     2.0000 |             0.0003 |
 | mom_20d                  |   -0.0123 |       -0.8832 |    -0.3231 |     0.5005 |                0.7500 |     3.0000 |             0.0003 |
 | overnight_gap_mean_20d   |   -0.0089 |       -0.8272 |    -0.2893 |     0.5530 |                0.7500 |     3.0000 |             0.0003 |
@@ -140,16 +140,16 @@ Daily Spearman rank IC between each feature and the 20d excess return, averaged 
 
 | feature A                | feature B         |    rho |
 |:-------------------------|:------------------|-------:|
-| mom_60d                  | rel_mom_60d       |  1.000 |
-| mom_20d                  | rel_mom_20d       |  1.000 |
 | vol_60d                  | rel_vol_60d       |  1.000 |
+| mom_20d                  | rel_mom_20d       |  1.000 |
+| mom_60d                  | rel_mom_60d       |  1.000 |
 | mom_120d                 | rel_mom_120d      |  1.000 |
 | log_traded_value_med_20d | amihud_log_20d    | -0.974 |
 | parkinson_vol_20d        | yz_vol_20d        |  0.968 |
 | mom_60d                  | vol_adj_mom_60d   |  0.963 |
 | rel_mom_60d              | vol_adj_mom_60d   |  0.963 |
-| mom_120d                 | dist_ma200        |  0.928 |
 | rel_mom_120d             | dist_ma200        |  0.928 |
+| mom_120d                 | dist_ma200        |  0.928 |
 | rel_mom_60d              | ma50_slope_20d    |  0.922 |
 | mom_60d                  | ma50_slope_20d    |  0.922 |
 | dist_ma20                | rsi_14            |  0.907 |
@@ -157,8 +157,8 @@ Daily Spearman rank IC between each feature and the 20d excess return, averaged 
 | dist_ma50                | rsi_14            |  0.893 |
 | vol_adj_mom_60d          | ma50_slope_20d    |  0.890 |
 | dist_ma200               | ma50_ma200_ratio  |  0.881 |
-| rel_mom_120d             | ma50_ma200_ratio  |  0.873 |
 | mom_120d                 | ma50_ma200_ratio  |  0.873 |
+| rel_mom_120d             | ma50_ma200_ratio  |  0.873 |
 | beta_60d                 | beta_120d         |  0.862 |
 | vol_20d                  | parkinson_vol_20d |  0.853 |
 

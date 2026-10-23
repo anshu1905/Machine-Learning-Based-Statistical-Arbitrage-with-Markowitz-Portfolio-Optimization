@@ -11,7 +11,7 @@ Prerequisite: `00_data_audit/REPORT.md` (shared audit, splits, IC table).
 
 ## Selection funnel (all statistics on TRAIN 2019–2022 only)
 
-1. **IC screen**: |Newey–West t| ≥ 0.5 and same IC sign in ≥ 50% of train years → 37 of 50: `log_traded_value_med_20d`, `ma50_ma200_ratio`, `vol_ret_corr_20d`, `amihud_log_20d`, `price_volume_interaction`, `log_volume`, `mom_252d`, `adx_14`, `dist_ma200`, `mom_120d`, `rel_mom_120d`, `corr_60d`, `ma50_slope_20d`, `resid_ret_60d`, `beta_60d`, `ret_5d`, `intraday_return`, `ret_1d`, `vol_adj_mom_60d`, `trend_consistency_60d`, `mfi_14`, `mom_60d`, `rel_mom_60d`, `rel_mom_20d`, `mom_20d`, `overnight_gap_mean_20d`, `dist_ma20`, `mom_accel_20d`, `dist_ma50`, `beta_120d`, `overnight_ret`, `yz_vol_20d`, `rsi_14`, `gap_vol_20d`, `rel_volume_20d`, `vol_20d`, `volume_trend_20_60`
+1. **IC screen**: |Newey–West t| ≥ 0.5 and same IC sign in ≥ 50% of train years → 37 of 50: `log_traded_value_med_20d`, `ma50_ma200_ratio`, `vol_ret_corr_20d`, `amihud_log_20d`, `price_volume_interaction`, `log_volume`, `mom_252d`, `adx_14`, `dist_ma200`, `mom_120d`, `rel_mom_120d`, `corr_60d`, `ma50_slope_20d`, `resid_ret_60d`, `beta_60d`, `ret_5d`, `intraday_return`, `ret_1d`, `vol_adj_mom_60d`, `trend_consistency_60d`, `mfi_14`, `rel_mom_60d`, `mom_60d`, `rel_mom_20d`, `mom_20d`, `overnight_gap_mean_20d`, `dist_ma20`, `mom_accel_20d`, `dist_ma50`, `beta_120d`, `overnight_ret`, `yz_vol_20d`, `rsi_14`, `gap_vol_20d`, `rel_volume_20d`, `vol_20d`, `volume_trend_20_60`
 2. **Redundancy**: one feature per cluster of |cross-sectional rank corr| ≥ 0.8 (keep highest |t|) → 23
 3. **VIF < 5.0**: removed [('rel_mom_20d', 6.86), ('ma50_ma200_ratio', 5.87), ('beta_60d', 5.68)] → **20 features**
 
@@ -54,8 +54,8 @@ Redundancy clusters among the IC-screened features:
 |:-------------------------|----------:|--------:|:-------|
 | ma50_slope_20d           |         1 |   1.414 | True   |
 | vol_adj_mom_60d          |         1 |   1.048 | False  |
-| mom_60d                  |         1 |   0.933 | False  |
 | rel_mom_60d              |         1 |   0.933 | False  |
+| mom_60d                  |         1 |   0.933 | False  |
 | ma50_ma200_ratio         |         2 |   2.563 | True   |
 | dist_ma200               |         2 |   1.904 | False  |
 | mom_120d                 |         2 |   1.876 | False  |

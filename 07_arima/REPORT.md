@@ -38,7 +38,7 @@ Most common BIC orders:
 
 |   bic_p |   bic_q |   stocks |
 |--------:|--------:|---------:|
-|       0 |       0 |      180 |
+|       0 |       0 |      179 |
 |       0 |       1 |       26 |
 |       1 |       0 |       13 |
 |       1 |       1 |        8 |
@@ -47,7 +47,7 @@ Most common BIC orders:
 
 BIC is the recommended criterion (consistent, parsimonious; AIC over-fits with ~1,000 noisy observations). Per-stock orders are in `data/orders.csv` (`recommended_p`, `recommended_q`).
 
-**Key finding:** BIC chooses ARIMA(0,0,0) — white noise plus a constant — for **76%** of stocks (AIC: 16%). For those stocks the 20-day ARIMA forecast is just 20 × the window's mean excess return, i.e. a trailing-drift (momentum) signal. ARIMA is still the right classical benchmark, but when modelling, also compare (a) the BIC orders, (b) the AIC orders and (c) a fixed ARIMA(1,0,1) for every stock, so the benchmark is not reduced to a moving average by construction.
+**Key finding:** BIC chooses ARIMA(0,0,0) — white noise plus a constant — for **75%** of stocks (AIC: 16%). For those stocks the 20-day ARIMA forecast is just 20 × the window's mean excess return, i.e. a trailing-drift (momentum) signal. ARIMA is still the right classical benchmark, but when modelling, also compare (a) the BIC orders, (b) the AIC orders and (c) a fixed ARIMA(1,0,1) for every stock, so the benchmark is not reduced to a moving average by construction.
 
 ## Model-ready data (`data/`)
 

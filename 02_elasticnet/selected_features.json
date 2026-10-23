@@ -48,10 +48,10 @@
     "dist_high_20d",
     "dist_high_60d",
     "beta_120d",
-    "ma50_ma200_ratio",
     "adx_14",
-    "intraday_range",
+    "ma50_ma200_ratio",
     "corr_60d",
+    "intraday_range",
     "vol_ret_corr_20d",
     "variance_ratio_5_60",
     "resid_ret_60d"
