@@ -7,6 +7,8 @@ than the classic input, each stock's historical mean return?
 period (rank IC 0.0008). All seven ML models had positive IC, up to **0.021 for Random Forest**. Top-10 portfolios built on ML forecasts
 beat the same portfolios built on historical means **for every model and for all 20 possible rebalance start
 days**. Average Sharpe ratio: about 1.0 for the best ML model, 0.16 for historical means, 0.46 for the market.
+The advantage holds in all four portfolio variants (long-only or long-short, 252-day or 20-day lookback). It is
+largest for long-short and smallest for long-only with a 20-day lookback, where historical means do much better.
 
 Training steps, server setup and hardware requirements: [TRAINING.md](TRAINING.md).
 
@@ -50,9 +52,9 @@ flowchart TD
     H --> J["Every 20 trading days: rank all stocks<br/>by predicted score → pick TOP 10"]
     K["Historical approach:<br/>rank by past-year mean return → TOP 10"] --> L
     J --> M["Expected return μ = market avg + IC × σ × score"]
-    M --> L["Markowitz max-Sharpe<br/>long-only, ≤ 25% per stock<br/>Ledoit–Wolf covariance (past 252 days)"]
+    M --> L["Markowitz max-Sharpe, ≤ 25% per stock<br/>long-only, or long top 10 / short bottom 10<br/>Ledoit–Wolf covariance (lookback 252 or 20 days)"]
     L --> N["Hold 20 days, pay costs, rebalance<br/>08_markowitz/backtest.py"]
-    N --> O["Compare ML vs historical vs market:<br/>Sharpe, CAGR, drawdown<br/>+ all 20 start days (robustness.py)"]
+    N --> O["Compare ML vs historical vs market:<br/>Sharpe, CAGR, drawdown, 4 variants<br/>+ all 20 start days (robustness.py)<br/>→ 08_markowitz/figures/"]
     L --> P["allocate.py: given ₹X, how much<br/>to put in each stock and how many shares"]
 ```
 
@@ -73,8 +75,11 @@ Implementation/
 ├── 05_rnn/                     │  + dataset.py (PyTorch Dataset)
 ├── 06_lstm/                    │  + dataset.py (PyTorch Dataset)
 ├── 07_arima/                   ┘  (per-stock series, orders.csv)
-├── 08_markowitz/               backtest.py: top-10 + Markowitz, ML vs historical μ → results/
+├── 08_markowitz/               backtest.py: top-10 + Markowitz, ML vs historical μ → results/<variant>/
+│                               (--side long|longshort, --lookback 252|20)
 │                               robustness.py: same backtest for all 20 rebalance start days
+│                               plot_backtest.py: every backtest chart → figures/<variant>/, figures/compare/
+│                               run_all.sh: all 4 variants + robustness + charts (~1-2 min)
 │                               allocate.py: split a given amount of money on the latest date
 ├── run_all.sh                  rebuilds every dataset (~5 min)
 ├── train_all.sh                trains all seven models (--quick for a smoke test)
@@ -103,9 +108,9 @@ On macOS XGBoost also needs the OpenMP runtime: `brew install libomp`. Python 3.
 | 2. Build every dataset | `./run_all.sh` | ~5 min |
 | 3. Train all seven models (GPU recommended, see TRAINING.md) | `./train_all.sh` | 1–3 h |
 | 4. Model comparison table + figures | `python compare_models.py && python plot_results.py` | < 1 min |
-| 5. ML vs historical Markowitz backtest | `python 08_markowitz/backtest.py` | ~10 s |
-| 6. Robustness over all 20 start days | `python 08_markowitz/robustness.py` | ~1 min |
-| 7. Allocate a given amount of money | `python 08_markowitz/allocate.py --capital 1000000` | seconds |
+| 5. Markowitz backtests (4 variants), robustness and all charts | `08_markowitz/run_all.sh` | ~1–2 min |
+| 6. One variant only | `python 08_markowitz/backtest.py --side longshort --lookback 20` | ~10 s |
+| 7. Allocate a given amount of money (long-only) | `python 08_markowitz/allocate.py --capital 1000000` | seconds |
 
 ---
 
@@ -263,6 +268,13 @@ Out-of-sample (test, Jul 2024 → Aug 2026, walk-forward). Full table: `results_
 ## From predictions to a portfolio: top 10 + Markowitz
 
 `08_markowitz/backtest.py` runs two pipelines side by side, identical except for the expected-return input.
+Steps 4–5 and the lookback have two settings each, giving **four variants**; the portfolio stage uses the models'
+saved predictions, so no retraining is needed to run any of them.
+
+| setting | options | flag |
+|---|---|---|
+| Portfolio side | **long-only** (buy top 10) or **long–short** (buy top 10, short bottom 10, dollar-neutral) | `--side long` / `--side longshort` |
+| Lookback for historical μ, σ and the covariance | **252 days** (1 year) or **20 days** (1 month) | `--lookback 252` / `--lookback 20` |
 
 ### Step 1: rebalance every 20 trading days
 
@@ -272,21 +284,22 @@ Over the test period (1 Jul 2024 → 21 Aug 2026): 27 rebalances, matching the 2
 
 | approach | expected 20-day return μ |
 |---|---|
-| **Historical** (classic Markowitz) | each stock's average daily return over the past 252 days × 20 |
+| **Historical** (classic Markowitz) | each stock's average daily return over the lookback window (252 or 20 days) × 20 |
 | **ML** (Grinold–Kahn) | **μᵢ = μ̄ + IC × σᵢ × zᵢ** |
 
 where
 - **μ̄** = the average historical μ across all stocks, the same market drift for both approaches;
 - **zᵢ** = the model's score for stock *i*, as a per-date normal score (0 = average, +2 = very strong);
-- **σᵢ** = the stock's 20-day volatility of excess return (past 252 days);
+- **σᵢ** = the stock's 20-day volatility of excess return (over the lookback window);
 - **IC** = the model's own realised IC over the last 252 prediction dates whose outcome was already known
   (floored at 0). An inaccurate model gets a small IC and its forecasts are shrunk towards the market average.
 
 This is the standard "alpha = IC × volatility × score" rule from Grinold & Kahn's *Active Portfolio Management*.
 
-### Step 3: pick the top 10
+### Step 3: pick the top 10 (and, for long–short, the bottom 10)
 
-Rank every tradable stock by its score: historical μ, or the ML model's prediction. Take the **10 highest**.
+Rank every tradable stock by its score: historical μ, or the ML model's prediction. Take the **10 highest** to buy.
+In the long–short variant also take the **10 lowest** to short.
 
 ### Step 4: decide how much goes into each (two methods)
 
@@ -299,9 +312,12 @@ Both start from the **same 10 stocks**; only the split differs.
 
 $$\text{Sharpe}(w) = \frac{w^\top \mu}{\sqrt{w^\top \Sigma\, w}} \quad \text{subject to } \sum_i w_i = 1,\; 0 \le w_i \le 0.25$$
 
-- **Σ** = covariance of the 10 stocks' daily returns over the past 252 days, with **Ledoit–Wolf shrinkage**
-  (a raw sample covariance is noisy and makes Markowitz unstable).
+- **Σ** = covariance of the stocks' daily returns over the lookback window, with **Ledoit–Wolf shrinkage**
+  (a raw sample covariance is noisy and makes Markowitz unstable, especially with only 20 days of data).
 - **Long-only** (wᵢ ≥ 0): only buying, no short selling.
+- **Long–short:** longs wᵢ ≥ 0 summing to +1, shorts wᵢ ≤ 0 summing to −1 (|wᵢ| ≤ 25%). The portfolio is
+  **dollar-neutral**: ₹1 long and ₹1 short per ₹1 of capital, so the market's moves largely cancel and the return
+  comes from the spread between winners and losers. Equal weight is +10% in each long and −10% in each short.
 - **Cap 25%** per stock: without it Markowitz puts most of the money into one or two stocks, because it trusts its
   noisy estimates too much.
 
@@ -315,13 +331,15 @@ If no stock has a positive μ, MV falls back to the minimum-variance portfolio. 
 ### Step 5: hold, pay costs, repeat
 
 Hold for 20 trading days (weights drift with prices), pay **10 bps** per unit of one-way turnover, rebalance.
+Long–short has no extra borrowing cost; in India a 20-day short needs stock futures or securities lending, which
+would cost somewhat more.
 Nothing uses future data: inputs at date T use data up to T's close, and returns are earned from T+1.
 
 ---
 
 ## ML vs historical returns: backtest results
 
-### Single run (start 1 Jul 2024), net of 10 bps costs
+### Main variant: long-only, 252-day lookback (start 1 Jul 2024, net of 10 bps costs)
 
 | expected-return input | daily test IC of the input | EW Sharpe | **MV Sharpe** | MV CAGR | MV max DD |
 |---|---|---|---|---|---|
@@ -335,7 +353,7 @@ Nothing uses future data: inputs at date T use data up to T's close, and returns
 | ARIMA | 0.0072 | 0.53 | 0.80 | 18.9% | −26.7% |
 | Benchmark (market) | – | – | 0.51 | 7.6% | −20.1% |
 
-### Robustness: all 20 possible start days
+### Robustness: all 20 possible start days (long-only, 252-day lookback)
 
 With only 27 rebalances, one start day can be lucky or unlucky. `robustness.py` re-runs everything starting on
 each of the 20 days of the first cycle.
@@ -351,7 +369,68 @@ each of the 20 days of the first cycle.
 | **Historical MV** | **0.16** | −0.26 | 0.8% | – |
 | **Historical EW** | **0.16** | −0.21 | 0.6% | – |
 
-Full tables: `08_markowitz/results/summary.md` and `offset_robustness.md`.
+Full tables per variant: `08_markowitz/results/<variant>/summary.md` and `offset_robustness.md`; all variants in
+one table: `08_markowitz/results/variant_summary.md`.
+
+### All four variants
+
+Markowitz (MV) portfolios. "ML average" is an equal blend of the seven ML portfolios, so no model is picked with
+hindsight. Mean Sharpe is over the 20 start days.
+
+| variant | Historical μ Sharpe | ML average Sharpe | Historical μ CAGR | ML average CAGR | ML beats historical (models × weightings × start days) |
+|---|---|---|---|---|---|
+| **Long-only, 252-day** | 0.46 (mean 0.16) | **1.07** (mean 0.81) | 9.5% | **22.8%** | 279 / 280 |
+| Long-only, 20-day | 1.01 (mean 0.75) | **1.27** (mean 0.92) | 23.9% | **29.5%** | 198 / 280 |
+| **Long–short, 252-day** | 0.37 (mean −0.01) | **1.43** (mean 1.09) | 6.1% | **23.9%** | 276 / 280 |
+| Long–short, 20-day | 0.56 (mean 0.29) | **1.47** (mean 1.01) | 10.8% | **26.6%** | 250 / 280 |
+| Benchmark (market) | 0.51 (mean 0.46) | | 7.6% | | |
+
+What changes across variants:
+- **Long–short shows the ML advantage most clearly.** Shorting the ML's bottom 10 removes most market risk
+  (volatility ~16% vs ~21%, max drawdown −16% vs −23%) and the ML average Sharpe rises to ~1.4. The historical
+  long–short barely makes money: its "losers" keep losing no more than its "winners" keep winning.
+- **Most of the long–short gain comes from the long leg.** The ML short leg loses slightly overall (about −5%
+  cumulative, `figures/longshort_lb252/12_long_vs_short_leg.png`): the models are better at finding winners than
+  losers, and the short leg mainly serves as a market hedge.
+- **A 20-day lookback makes historical μ much better in long-only** (Sharpe 1.01 vs 0.46). A 1-month average return
+  is a short-term momentum signal that happened to work in this period. ML is still ahead (Sharpe 1.27; input IC up to
+  0.021 vs 0.005 for the 20-day mean), but the gap is small and ML wins only 198 of 280 comparisons.
+  It also trades far more: ~180% turnover per rebalance for historical μ.
+- **The 20-day lookback hardly changes the ML portfolios**: the ML ranking does not depend on the lookback, only
+  the covariance and σ do. Equal-weight ML results are identical across lookbacks.
+
+### Charts (`08_markowitz/figures/`, made by `plot_backtest.py`)
+
+Each variant folder (`long_lb252`, `long_lb20`, `longshort_lb252`, `longshort_lb20`) has:
+
+| figure | what it shows |
+|---|---|
+| `01_equity_curves.png` | growth of 1 for every model, historical μ, ML average and the market; Markowitz and equal weight |
+| `02_drawdowns.png` | drawdown from the previous peak over time (underwater chart) |
+| `03_ml_vs_historical.png` | ML average with the range of the 7 models vs historical μ |
+| `04_rolling_sharpe.png` | 6-month rolling Sharpe: when each approach worked |
+| `05_period_return_distribution.png` | spread of the 20-day returns per source (box plot) |
+| `06_expected_vs_realised.png` | the μ fed to Markowitz vs what the portfolio actually earned: historical μ is far too optimistic |
+| `07_annual_returns.png` | return per calendar year for every source (heatmap) |
+| `08_risk_return.png` | volatility vs CAGR for every strategy |
+| `09_robustness_start_days.png` | Sharpe over the 20 start days (box plot) |
+| `10_turnover_diversification.png` | average turnover and effective number of positions |
+| `11_ml_minus_historical_by_period.png` | ML average minus historical return in each 20-day period |
+| `12_long_vs_short_leg.png` | long-short only: return from the long leg vs the short leg |
+
+`figures/compare/` sets the variants side by side:
+
+| figure | what it shows |
+|---|---|
+| `A_sharpe_by_variant.png` | Sharpe of historical μ, ML and the market in every variant (mean ± sd over start days) |
+| `B_share_of_start_days_beating_historical.png` | per model and variant: share of start days on which ML beats historical |
+| `C_sharpe_gap_vs_historical.png` | per model and variant: Sharpe of ML minus Sharpe of historical |
+| `D_cagr_and_drawdown_by_variant.png` | CAGR and maximum drawdown per variant |
+| `E_equity_all_variants.png` | ML average vs historical μ growth curves, all four variants |
+
+![Sharpe by variant](08_markowitz/figures/compare/A_sharpe_by_variant.png)
+![ML vs historical, long-only](08_markowitz/figures/long_lb252/03_ml_vs_historical.png)
+![Expected vs realised](08_markowitz/figures/long_lb252/06_expected_vs_realised.png)
 
 ### Conclusions
 
@@ -365,7 +444,9 @@ Full tables: `08_markowitz/results/summary.md` and `offset_robustness.md`.
 4. **Best model: Random Forest.** Highest test IC, highest ICIR, highest average Sharpe across start days, and beats
    historical on every start day. ElasticNet's top Sharpe in the single run is luck: its IC is close to zero and its
    result swings with the start day.
-5. **Markowitz adds little on top of ML picks.** The ML μ values are close together, so MV mainly manages risk; EW
+5. **It holds in every variant.** ML beats historical μ for long-only and long–short, with 252-day and 20-day
+   lookbacks. The gap is largest for long–short and smallest for long-only with a 20-day lookback.
+6. **Markowitz adds little on top of ML picks.** The ML μ values are close together, so MV mainly manages risk; EW
    was as good or better for most models. The gain comes from *which* stocks are picked.
 
 ---
@@ -398,15 +479,16 @@ Invested ₹9,96,628, cash left ₹3,372. Expected 20-day return +1.14%, 20-day 
 
 **Why only one date?** The data ends on 21 Aug 2026 and each forecast covers the next 20 trading days only. For a
 current allocation: export fresh data → `./run_all.sh` → retrain the model → run `allocate.py`; repeat every 20
-trading days. The top 10 and weights at every past rebalance are in `08_markowitz/results/holdings.csv`:
+trading days. The picks and weights at every past rebalance are in `08_markowitz/results/<variant>/holdings.csv`:
 
 | column | meaning |
 |---|---|
 | `Date` | rebalance date; formed at that day's close, held 20 trading days |
 | `source` | where μ came from: `Historical` or a model name |
 | `weighting` | `EW` (equal weight) or `MV` (Markowitz max-Sharpe) |
+| `side` | `long` (top 10) or `short` (bottom 10, long–short variants only) |
 | `Symbol` | Bloomberg ticker |
-| `weight` | fraction of the portfolio in this stock (sums to 1 per portfolio; 0 = in the top 10 but not held) |
+| `weight` | fraction of capital in this stock: longs sum to 1, shorts to −1; 0 = picked but not held |
 | `mu_20d` | expected 20-day return fed to Markowitz |
 | `score` | value used to rank and pick the top 10 (historical: same as `mu_20d`; ML: model score z) |
 
@@ -421,8 +503,11 @@ This is a research backtest for a course project, **not investment advice**.
   consistency across models, weightings and start days.
 - **Survivorship bias.** The universe is today's 238 stocks applied back in time. Firms that collapsed or were
   delisted are missing, which flatters every strategy, especially small/mid-cap tilts.
-- **Trading costs.** ML portfolios replace about 90–110% of holdings per rebalance (~11× a year). At 10 bps this
-  is already included. At a more realistic 30 bps for mid caps, expect roughly 2–2.5% a year less.
+- **Trading costs.** Long-only ML portfolios replace about 90–110% of holdings per rebalance (~11× a year);
+  long–short about 200–250% (two legs). 10 bps is included. At a more realistic 30 bps for mid caps, expect roughly
+  2–2.5% a year less for long-only and about twice that for long–short.
+- **Shorting.** The long–short variants assume shorts can be held for 20 days at no extra cost. In India that needs
+  stock futures (only for F&O stocks) or securities lending, both of which cost more.
 - **Selection after the fact.** Naming the best model on test adds optimism. The average across all ML models
   (Sharpe ~0.86) is the more conservative figure.
 - **Corporate actions.** Two unadjusted demergers (Siemens 2025-04, Tata Motors 2025-10) show as fake price

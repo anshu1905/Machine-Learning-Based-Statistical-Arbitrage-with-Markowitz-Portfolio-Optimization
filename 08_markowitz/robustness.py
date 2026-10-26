@@ -4,7 +4,9 @@ With only ~27 rebalances, one start day can be lucky or unlucky. This shows whet
 ML-vs-historical ranking holds for every start day. Extra arguments go to backtest.py.
 
     python 08_markowitz/robustness.py
+    python 08_markowitz/robustness.py --side longshort --lookback 20
 """
+import argparse
 import subprocess
 import sys
 import tempfile
@@ -13,6 +15,11 @@ from pathlib import Path
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
+p = argparse.ArgumentParser(add_help=False)
+p.add_argument("--side", default="long")
+p.add_argument("--lookback", type=int, default=252)
+known, _ = p.parse_known_args()
+OUT = HERE / "results" / f"{known.side}_lb{known.lookback}"
 with tempfile.TemporaryDirectory() as tmp:
     procs = [subprocess.Popen([sys.executable, str(HERE / "backtest.py"), "--offset", str(o), "--out", f"{tmp}/{o}",
                                *sys.argv[1:]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -30,7 +37,9 @@ for wt in ("EW", "MV"):
     cols = [c for c in sharpe if c.endswith(wt)]
     out.loc[cols, "Sharpe > Historical (share of start days)"] = sharpe[cols].gt(sharpe[f"Historical {wt}"], axis=0).mean()
 out = out.sort_values("mean Sharpe", ascending=False)
-out.to_csv(HERE / "results/offset_robustness.csv")
-(HERE / "results/offset_robustness.md").write_text(
+OUT.mkdir(parents=True, exist_ok=True)
+out.to_csv(OUT / "offset_robustness.csv")
+d.to_csv(OUT / "offset_runs.csv", index=False)
+(OUT / "offset_robustness.md").write_text(
     "# Robustness: all 20 start days of the 20-day rebalance cycle\n\n" + out.to_markdown(floatfmt=".3f"))
 print(out.round(3).to_string())
