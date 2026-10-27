@@ -276,6 +276,15 @@ saved predictions, so no retraining is needed to run any of them.
 | Portfolio side | **long-only** (buy top 10) or **long–short** (buy top 10, short bottom 10, dollar-neutral) | `--side long` / `--side longshort` |
 | Lookback for historical μ, σ and the covariance | **252 days** (1 year) or **20 days** (1 month) | `--lookback 252` / `--lookback 20` |
 
+**Why 252 days is the main lookback** (for both long-only and long–short):
+- 252 trading days = 1 year, the standard estimation window for risk models and the classic definition of the
+  historical-mean input, which makes it the fair baseline.
+- The covariance needs enough data: long–short Markowitz on 20 stocks estimates 210 variances and covariances.
+  One year of daily returns supports that; 20 days does not, and the matrix becomes mostly shrinkage.
+- A year spans different market conditions, so volatility and correlation estimates are not driven by one month.
+
+The 20-day lookback is a robustness check: it reacts faster but is much noisier. ML beats historical μ with both.
+
 ### Step 1: rebalance every 20 trading days
 
 Over the test period (1 Jul 2024 → 21 Aug 2026): 27 rebalances, matching the 20-day forecast horizon.
@@ -428,9 +437,36 @@ Each variant folder (`long_lb252`, `long_lb20`, `longshort_lb252`, `longshort_lb
 | `D_cagr_and_drawdown_by_variant.png` | CAGR and maximum drawdown per variant |
 | `E_equity_all_variants.png` | ML average vs historical μ growth curves, all four variants |
 
+#### All variants side by side
+
 ![Sharpe by variant](08_markowitz/figures/compare/A_sharpe_by_variant.png)
-![ML vs historical, long-only](08_markowitz/figures/long_lb252/03_ml_vs_historical.png)
-![Expected vs realised](08_markowitz/figures/long_lb252/06_expected_vs_realised.png)
+![Growth of 1, all variants](08_markowitz/figures/compare/E_equity_all_variants.png)
+
+The same three charts for every variant: ML vs historical growth, drawdowns, and expected vs realised return.
+
+#### Long-only, 252-day lookback
+
+![ML vs historical, long-only, 252-day](08_markowitz/figures/long_lb252/03_ml_vs_historical.png)
+![Drawdowns, long-only, 252-day](08_markowitz/figures/long_lb252/02_drawdowns.png)
+![Expected vs realised, long-only, 252-day](08_markowitz/figures/long_lb252/06_expected_vs_realised.png)
+
+#### Long-only, 20-day lookback
+
+![ML vs historical, long-only, 20-day](08_markowitz/figures/long_lb20/03_ml_vs_historical.png)
+![Drawdowns, long-only, 20-day](08_markowitz/figures/long_lb20/02_drawdowns.png)
+![Expected vs realised, long-only, 20-day](08_markowitz/figures/long_lb20/06_expected_vs_realised.png)
+
+#### Long–short, 252-day lookback
+
+![ML vs historical, long-short, 252-day](08_markowitz/figures/longshort_lb252/03_ml_vs_historical.png)
+![Drawdowns, long-short, 252-day](08_markowitz/figures/longshort_lb252/02_drawdowns.png)
+![Expected vs realised, long-short, 252-day](08_markowitz/figures/longshort_lb252/06_expected_vs_realised.png)
+
+#### Long–short, 20-day lookback
+
+![ML vs historical, long-short, 20-day](08_markowitz/figures/longshort_lb20/03_ml_vs_historical.png)
+![Drawdowns, long-short, 20-day](08_markowitz/figures/longshort_lb20/02_drawdowns.png)
+![Expected vs realised, long-short, 20-day](08_markowitz/figures/longshort_lb20/06_expected_vs_realised.png)
 
 ### Conclusions
 
