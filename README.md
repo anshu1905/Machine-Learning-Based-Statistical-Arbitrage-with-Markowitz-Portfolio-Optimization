@@ -80,7 +80,8 @@ Implementation/
 │                               robustness.py: same backtest for all 20 rebalance start days
 │                               plot_backtest.py: every backtest chart → figures/<variant>/, figures/compare/
 │                               run_all.sh: all 4 variants + robustness + charts (~1-2 min)
-│                               allocate.py: split a given amount of money on the latest date
+│                               allocate.py: split a given amount of money on the latest date (long or long-short)
+│                               optimizer.py: the max-Sharpe solver shared by backtest.py and allocate.py
 ├── run_all.sh                  rebuilds every dataset (~5 min)
 ├── train_all.sh                trains all seven models (--quick for a smoke test)
 ├── compare_models.py           one comparison table from every results/metrics.json → results_summary.md
@@ -110,7 +111,7 @@ On macOS XGBoost also needs the OpenMP runtime: `brew install libomp`. Python 3.
 | 4. Model comparison table + figures | `python compare_models.py && python plot_results.py` | < 1 min |
 | 5. Markowitz backtests (4 variants), robustness and all charts | `08_markowitz/run_all.sh` | ~1–2 min |
 | 6. One variant only | `python 08_markowitz/backtest.py --side longshort --lookback 20` | ~10 s |
-| 7. Allocate a given amount of money (long-only) | `python 08_markowitz/allocate.py --capital 1000000` | seconds |
+| 7. Allocate a given amount of money | `python 08_markowitz/allocate.py --capital 1000000 [--side longshort]` | seconds |
 
 ---
 
@@ -490,14 +491,18 @@ The same three charts for every variant: ML vs historical growth, drawdowns, and
 ## Allocating a given amount of money
 
 `08_markowitz/allocate.py` applies the same recipe once, on the latest date in the data, and converts the weights
-into rupees and whole shares at the latest close.
+into rupees and whole shares at the latest close. It uses the same max-Sharpe solver as the backtest
+(`optimizer.py`), with a 252-day lookback. The result is saved to `08_markowitz/results/allocation_<side>.csv`,
+one row per stock with its side (`long`/`short`), action (`BUY`/`SHORT`), weight, amount, price, shares, value and
+expected 20-day return. Shorts have negative weights, amounts and share counts.
 
 ```bash
-python 08_markowitz/allocate.py --capital 1000000                                  # ₹10 lakh, Random Forest
+python 08_markowitz/allocate.py --capital 1000000                                  # ₹10 lakh, long-only
+python 08_markowitz/allocate.py --capital 1000000 --side longshort                 # ₹10 lakh long + ₹10 lakh short
 python 08_markowitz/allocate.py --capital 500000 --model 04_xgboost --top 15 --cap 0.2
 ```
 
-Example output for ₹10,00,000 with Random Forest on 21 Aug 2026 (the last date in the data):
+Example output for ₹10,00,000 with Random Forest on 21 Aug 2026 (the last date in the data), **long-only**:
 
 | stock | weight | amount (₹) | price (₹) | shares |
 |---|---|---|---|---|
@@ -512,6 +517,35 @@ Example output for ₹10,00,000 with Random Forest on 21 Aug 2026 (the last date
 | POONAWAL | 3.6% | 35,774 | 490.05 | 73 |
 
 Invested ₹9,96,628, cash left ₹3,372. Expected 20-day return +1.14%, 20-day volatility 5.1%.
+
+**Long–short** (`--side longshort`), same capital and date: buy ₹10 lakh of the top 10 and short ₹10 lakh of the
+bottom 10 (dollar-neutral, gross exposure ₹20 lakh, |weight| ≤ 25%):
+
+| side | stock | weight | shares |
+|---|---|---|---|
+| long | DLPL | +18.9% | 99 |
+| long | ARTO | +12.7% | 241 |
+| long | MOFS | +11.1% | 112 |
+| long | KVB | +10.5% | 311 |
+| long | CREDAG | +9.1% | 60 |
+| long | CGCL | +8.5% | 379 |
+| long | ASTERDM | +7.8% | 103 |
+| long | AEGISLOG | +7.7% | 53 |
+| long | CUBK | +7.5% | 344 |
+| long | POONAWAL | +6.1% | 125 |
+| short | HDFCLIFE | −19.1% | −344 |
+| short | GCPL | −16.0% | −171 |
+| short | TMPV | −14.3% | −448 |
+| short | HPCL | −13.7% | −378 |
+| short | JUBI | −13.6% | −268 |
+| short | TCS | −11.1% | −48 |
+| short | KPITTECH | −10.0% | −169 |
+| short | INFO | −2.2% | −19 |
+
+Bought ₹9,94,071, sold short ₹9,97,318 (net exposure −₹3,247). Two of the bottom 10 got 0% and are not shorted.
+Expected 20-day return +0.31% with 20-day volatility 4.6%: lower than long-only because the market drift cancels
+between the two legs, leaving only the spread between the model's winners and losers. A 20-day short in India
+needs stock futures or securities lending.
 
 **Why only one date?** The data ends on 21 Aug 2026 and each forecast covers the next 20 trading days only. For a
 current allocation: export fresh data → `./run_all.sh` → retrain the model → run `allocate.py`; repeat every 20
