@@ -25,6 +25,14 @@ covariance. The model IC used in mu always comes from the last 252 prediction da
 No look-ahead: every input at rebalance date T uses data up to T's close; holding
 returns start on T+1.
 
+Outputs (results/<side>_lb<lookback>/):
+  summary.csv / summary.md   one row per (source, weighting): CAGR, vol, Sharpe, drawdown, IC, ...
+  periods.csv                one row per rebalance and portfolio: realised and expected return, turnover
+  holdings.csv               every stock picked at every rebalance, with its weight, mu and score
+  forecast_ic.csv            rank IC of each source's score against the realised holding-period return
+  daily_returns.parquet      daily net return of every portfolio and of the benchmark
+  leg_returns.parquet        daily return split into the long-leg and short-leg contributions
+
     python 08_markowitz/backtest.py                       # long-only, 252-day lookback
     python 08_markowitz/backtest.py --side longshort --lookback 20
     08_markowitz/run_all.sh                               # all four variants + robustness + figures
@@ -62,18 +70,26 @@ LOOKBACK = args.lookback
 OUT = Path(args.out or HERE / "results" / f"{args.side}_lb{LOOKBACK}")
 
 # --------------------------------------------------------------------------- data
+# One row per (Date, Symbol). ret_1d is the stock's simple daily return, r_b the benchmark's,
+# tradable = False on zero-volume / no-range days, and TARGET is the realised 20-day excess
+# return (used only to score forecasts, never as an input).
 panel = pd.read_parquet(C.PANEL_CLEAN, columns=["Date", "Symbol", "ret_1d", "r_b", "tradable", "big_jump", C.TARGET])
 # |daily return| > 35% are unadjusted corporate actions (demergers), not real P&L
 panel.loc[panel.big_jump, "ret_1d"] = 0.0
+# Wide matrices (dates x stocks) so a window of history or a holding period is a simple row slice
 R = panel.pivot(index="Date", columns="Symbol", values="ret_1d").sort_index()
 TRAD = panel.pivot(index="Date", columns="Symbol", values="tradable").reindex_like(R).eq(True)
-RB = panel.groupby("Date").r_b.first().reindex(R.index).fillna(0.0)
+RB = panel.groupby("Date").r_b.first().reindex(R.index).fillna(0.0)  # benchmark: same value for every stock
 dates = R.index
-pos = {d: i for i, d in enumerate(dates)}
+pos = {d: i for i, d in enumerate(dates)}  # date -> row number, to step back a number of trading days
 
+# Rebalance on every 20th trading day of the test period (20 = the forecast horizon, so holding
+# periods do not overlap). --offset shifts the cycle; robustness.py runs all 20 offsets.
 test_idx = np.flatnonzero(dates >= pd.Timestamp(C.TEST_START))
 rebal = [i for i in test_idx[args.offset::C.HORIZON] if i < len(dates) - 1]  # every 20th test day, needs a day to hold
 
+# Each model's walk-forward predictions (pred_z = per-date Gaussian rank of the prediction) and its
+# daily IC series. The IC is needed later to scale the score into an expected return.
 preds = {}
 for mdir, name in MODELS.items():
     f = C.ROOT / mdir / "results/predictions.parquet"
@@ -81,7 +97,8 @@ for mdir, name in MODELS.items():
         d = pd.read_parquet(f, columns=["Date", "Symbol", "y_raw", "pred", "pred_z"])
         ic = daily_rank_ic(d.dropna(subset=["y_raw", "pred"]), ["pred"], target="y_raw")["pred"].dropna()
         preds[name] = (d.set_index(["Date", "Symbol"]).pred_z, ic.sort_index())
-# Daily test IC of every expected-return input, on the same target and dates the models were scored on
+# Daily test IC of every expected-return input, on the same target and dates the models were scored on.
+# For the historical input the "forecast" is each stock's rolling mean daily return over the lookback.
 panel = panel.sort_values(["Symbol", "Date"])
 panel["mu_hist"] = panel.groupby("Symbol").ret_1d.transform(
     lambda s: s.rolling(LOOKBACK, min_periods=int(0.9 * LOOKBACK)).mean())
@@ -92,19 +109,26 @@ print(f"models: {list(preds)} | rebalances: {len(rebal)} | {dates[rebal[0]].date
 
 
 def max_sharpe(mu, cov, cap, n_long):
-    """Max-Sharpe weights. The first n_long assets are longs (sum +1); any others are shorts (sum -1)."""
+    """Max-Sharpe weights. The first n_long assets are longs (sum +1); any others are shorts (sum -1).
+
+    Solves  max  w'mu / sqrt(w'Cov w)  with SLSQP, subject to
+      longs  0 <= w_i <= cap, summing to +1   (fully invested in the long leg)
+      shorts -cap <= w_i <= 0, summing to -1  (long-short only: as much short as long)
+    Returns the weights and whether it had to fall back to minimum variance.
+    """
     n = len(mu)
-    sign = np.r_[np.ones(n_long), -np.ones(n - n_long)]
-    w0 = sign / np.where(sign > 0, n_long, max(n - n_long, 1))
+    sign = np.r_[np.ones(n_long), -np.ones(n - n_long)]           # +1 for longs, -1 for shorts
+    w0 = sign / np.where(sign > 0, n_long, max(n - n_long, 1))    # start from equal weight on each leg
     if w0 @ mu <= 0:  # no positive expected return to exploit: fall back to minimum variance
         obj = lambda w: w @ cov @ w  # noqa: E731
     else:
-        obj = lambda w: -(w @ mu) / np.sqrt(w @ cov @ w)  # noqa: E731
+        obj = lambda w: -(w @ mu) / np.sqrt(w @ cov @ w)  # noqa: E731  (minimise minus Sharpe)
     bounds = [(0, cap) if s > 0 else (-cap, 0) for s in sign]
     cons = [{"type": "eq", "fun": lambda w: w[:n_long].sum() - 1}]
     if n > n_long:
         cons.append({"type": "eq", "fun": lambda w: w[n_long:].sum() + 1})
     w = minimize(obj, w0, method="SLSQP", bounds=bounds, constraints=cons).x
+    # The solver can land a hair outside the bounds: clip each leg to its sign and rescale it
     w = np.where(sign > 0, np.clip(w, 0, None), np.clip(w, None, 0))
     w[:n_long] /= w[:n_long].sum()
     if n > n_long:
@@ -113,7 +137,13 @@ def max_sharpe(mu, cov, cap, n_long):
 
 
 def score_ml(name, T, sigma, mu_bar, univ):
-    """Model score z and expected return mu for the universe at date T."""
+    """Model score z and expected return mu for the universe at date T.
+
+    mu_i = mu_bar + IC x sigma_i x z_i (Grinold-Kahn). The IC is the model's own track record:
+    its mean daily IC over the last IC_WINDOW prediction dates whose 20-day outcome was already
+    known at T (prediction date <= T - 21 trading days). A negative IC is floored at 0, which
+    turns an unreliable model's mu into the market average.
+    """
     pz, ic = preds[name]
     avail = pz.index.get_level_values(0).unique()
     d = avail[avail <= T].max()  # ARIMA predicts every 5th day; others every day
@@ -124,25 +154,31 @@ def score_ml(name, T, sigma, mu_bar, univ):
 
 
 # --------------------------------------------------------------------------- backtest
+# A strategy = (source of mu, weighting): Historical / each model x EW (equal weight) / MV (Markowitz)
 sources = ["Historical"] + list(preds)
 strategies = [(s, wt) for s in sources for wt in ("EW", "MV")]
-daily = {k: [] for k in strategies}
+daily = {k: [] for k in strategies}  # daily net returns, one Series per holding period
 legs = {k: [] for k in strategies}  # daily return contribution of the long and the short leg
 held = {k: pd.Series(dtype=float) for k in strategies}  # drifted weights from last period
-log, picks, fc = [], [], []
+log, picks, fc = [], [], []  # per-period log, every holding, forecast quality per rebalance
 
 for k, t in enumerate(rebal):
     T = dates[t]
-    end = rebal[k + 1] if k + 1 < len(rebal) else len(dates) - 1
+    end = rebal[k + 1] if k + 1 < len(rebal) else len(dates) - 1  # hold until the next rebalance
+
+    # Inputs from the lookback window only (rows up to and including T): no look-ahead
     win = R.iloc[t - LOOKBACK + 1: t + 1]
+    # Universe: tradable on T with at least 90% of the lookback window observed
     univ = [s for s in R.columns if TRAD.at[T, s] and win[s].notna().sum() >= 0.9 * LOOKBACK]
     W = win[univ].fillna(0.0)
-    mu_hist = W.mean() * C.HORIZON
-    mu_bar = mu_hist.mean()
-    sigma = W.sub(RB.loc[W.index], axis=0).std() * np.sqrt(C.HORIZON)
+    mu_hist = W.mean() * C.HORIZON                                         # historical 20-day mu
+    mu_bar = mu_hist.mean()                                                # market drift, shared by all sources
+    sigma = W.sub(RB.loc[W.index], axis=0).std() * np.sqrt(C.HORIZON)      # 20-day vol of excess return
+    # Realised return over the coming holding period: used only to score the forecasts afterwards
     fwd = (1 + R.iloc[t + 1: end + 1][univ].fillna(0.0)).prod() - 1  # realised holding return
 
     for src in sources:
+        # score ranks the stocks; mu is what Markowitz sees. For historical they are the same thing.
         if src == "Historical":
             score, mu, ic_hat = mu_hist, mu_hist, np.nan
         else:
@@ -150,29 +186,37 @@ for k, t in enumerate(rebal):
         # forecast quality of the return input itself over the whole universe
         ok = score.notna() & fwd.notna()
         fc.append({"Date": T, "source": src, "rank_ic": spearmanr(score[ok], fwd[ok])[0], "ic_used": ic_hat})
+
+        # Step 1: picks. Top N to buy; for long-short also the bottom N to sell short.
         ranked = score.dropna().sort_values(ascending=False)
         top = ranked.index[:args.top]
         bottom = ranked.index[-args.top:] if args.side == "longshort" else ranked.index[:0]
         names = top.append(bottom)
+
+        # Step 2: weights. The covariance is scaled to 20 days to match mu.
         with np.errstate(all="ignore"):  # spurious BLAS warnings from the unused precision matrix on macOS
             cov = LedoitWolf().fit(W[names].values).covariance_ * C.HORIZON
         w_mv, fallback = max_sharpe(mu[names].values, cov, args.cap, len(top))
         w_ew = np.r_[np.full(len(top), 1 / len(top)), np.full(len(bottom), -1 / max(len(bottom), 1))]
+
+        # Step 3: hold both portfolios until the next rebalance and record what happened
         for wt, w in (("EW", w_ew), ("MV", w_mv)):
             key = (src, wt)
             w = pd.Series(w, index=names)
+            # Turnover = total absolute trade needed to move from last period's drifted weights to w
             turnover = w.sub(held[key], fill_value=0.0).abs().sum()
-            path = (1 + R.iloc[t + 1: end + 1][names].fillna(0.0)).cumprod()
+            path = (1 + R.iloc[t + 1: end + 1][names].fillna(0.0)).cumprod()  # growth of 1 in each stock
             gain = (path - 1) * w                       # P&L of each position per unit of capital
-            value = 1 + gain.sum(axis=1)
+            value = 1 + gain.sum(axis=1)                # portfolio value; shorts gain when prices fall
             prev = value.shift(1).fillna(1.0)
-            r = value.diff().fillna(value.iloc[0] - 1) / prev
-            r.iloc[0] -= turnover * args.cost_bps / 1e4
+            r = value.diff().fillna(value.iloc[0] - 1) / prev  # daily return of the drifting portfolio
+            r.iloc[0] -= turnover * args.cost_bps / 1e4        # trading cost charged on the first day
             daily[key].append(r)
             lg_long = gain[top].sum(axis=1)
             lg_short = gain[bottom].sum(axis=1)
             legs[key].append(pd.DataFrame({"long": lg_long.diff().fillna(lg_long.iloc[0]) / prev,
                                            "short": lg_short.diff().fillna(lg_short.iloc[0]) / prev}))
+            # Weights at the end of the period after prices moved: the starting point for next turnover
             held[key] = (path.iloc[-1] * w) / value.iloc[-1]
             log.append({"Date": T, "source": src, "weighting": wt, "period_return": value.iloc[-1] - 1,
                         "expected_return": float(w @ mu[names]), "turnover": turnover,
@@ -181,12 +225,13 @@ for k, t in enumerate(rebal):
             picks += [{"Date": T, "source": src, "weighting": wt, "side": "long" if s in top else "short",
                        "Symbol": s, "weight": w[s], "mu_20d": mu[s], "score": score[s]} for s in names]
 
-bench = RB.iloc[rebal[0] + 1:]
+bench = RB.iloc[rebal[0] + 1:]  # buy-and-hold market over the same days
 log, picks, fc = pd.DataFrame(log), pd.DataFrame(picks), pd.DataFrame(fc)
 
 
 # --------------------------------------------------------------------------- metrics
 def stats(r):
+    """Annualised performance of a daily return series (252 trading days a year)."""
     eq = (1 + r).cumprod()
     yrs = len(r) / 252
     ex = r - args.rf / 252
@@ -198,9 +243,11 @@ def stats(r):
 rets = {f"{s} {wt}": pd.concat(daily[(s, wt)]) for s, wt in strategies}
 rets["Benchmark"] = bench
 rows = []
+# Each ML portfolio is compared with the historical portfolio of the same weighting, period by period
 hist_period = {wt: log[(log.source == "Historical") & (log.weighting == wt)].period_return.values for wt in ("EW", "MV")}
 for s, wt in strategies:
     lg = log[(log.source == s) & (log.weighting == wt)]
+    # Average turnover skips the first period, which buys the whole portfolio from cash
     row = {"source": s, "weighting": wt, **stats(rets[f"{s} {wt}"]),
            "avg turnover": lg.turnover.iloc[1:].mean(), "daily test IC": daily_ic[s].mean(),
            "IC t": newey_west_tstat(daily_ic[s], C.HORIZON)}
@@ -212,6 +259,7 @@ for s, wt in strategies:
 rows.append({"source": "Benchmark", "weighting": "-", **stats(bench)})
 summary = pd.DataFrame(rows)
 
+# --------------------------------------------------------------------------- outputs
 OUT.mkdir(parents=True, exist_ok=True)
 summary.to_csv(OUT / "summary.csv", index=False)
 log.to_csv(OUT / "periods.csv", index=False)
@@ -220,6 +268,7 @@ fc.to_csv(OUT / "forecast_ic.csv", index=False)
 pd.DataFrame(rets).to_parquet(OUT / "daily_returns.parquet")
 pd.concat({f"{s} {wt}": pd.concat(legs[(s, wt)]) for s, wt in strategies}, axis=1).to_parquet(OUT / "leg_returns.parquet")
 
+# Human-readable copy of the summary table
 pct = ["CAGR", "ann. vol", "max drawdown", "total return", "avg turnover", "beats Hist. (periods)"]
 show = summary.copy()
 for c in pct:
