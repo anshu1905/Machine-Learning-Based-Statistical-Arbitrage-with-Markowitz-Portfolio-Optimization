@@ -1,0 +1,43 @@
+{
+  "model": "ARIMA",
+  "val": {
+    "n_dates": 18,
+    "n_rows": 4284,
+    "ic_mean": 0.07879286806437351,
+    "ic_std": 0.15212839047229088,
+    "ic_tstat_nw": 3.2678071741597043,
+    "icir_ann": 1.8384927061710308,
+    "ic_hit_rate": 0.7777777777777778,
+    "q5_minus_q1_20d": 0.027363915363477417,
+    "q5_minus_q1_tstat_nw": 3.0222717538558586,
+    "q5_minus_q1_ann_gross": 0.34478533357981545,
+    "ic_by_year": {
+      "2023": 0.0942,
+      "2024": 0.0387
+    }
+  },
+  "test": {
+    "n_dates": 103,
+    "n_rows": 24513,
+    "ic_mean": 0.0072158604448819665,
+    "ic_std": 0.15470484953880384,
+    "ic_tstat_nw": 0.28613576315854133,
+    "icir_ann": 0.16556535708957248,
+    "ic_hit_rate": 0.5728155339805825,
+    "q5_minus_q1_20d": 0.003967778426280478,
+    "q5_minus_q1_tstat_nw": 0.6768424235213437,
+    "q5_minus_q1_ann_gross": 0.049994008171134016,
+    "ic_by_year": {
+      "2024": -0.046,
+      "2025": 0.0144,
+      "2026": 0.044
+    }
+  },
+  "best_params": {
+    "order_rule": "bic",
+    "window": 250
+  },
+  "tune_step": 20,
+  "test_step": 5,
+  "note": "val metrics use tune_step spacing; NW lags set for test_step"
+}

@@ -1,0 +1,126 @@
+{
+  "model": "RNN",
+  "val": {
+    "n_dates": 349,
+    "n_rows": 83062,
+    "ic_mean": 0.10802306901885902,
+    "ic_std": 0.1533097176049459,
+    "ic_tstat_nw": 3.7052964389578573,
+    "icir_ann": 2.5011060148618887,
+    "ic_hit_rate": 0.7879656160458453,
+    "q5_minus_q1_20d": 0.038080815225839615,
+    "q5_minus_q1_tstat_nw": 5.266615390777588,
+    "q5_minus_q1_ann_gross": 0.4798182547092438,
+    "ic_by_year": {
+      "2023": 0.1293,
+      "2024": 0.0572
+    }
+  },
+  "test": {
+    "n_dates": 513,
+    "n_rows": 122094,
+    "ic_mean": 0.009157966318614406,
+    "ic_std": 0.11383625520797144,
+    "ic_tstat_nw": 0.5293494477205437,
+    "icir_ann": 0.2855641691280862,
+    "ic_hit_rate": 0.5341130604288499,
+    "q5_minus_q1_20d": 0.010212112218141556,
+    "q5_minus_q1_tstat_nw": 2.4833643436431885,
+    "q5_minus_q1_ann_gross": 0.12867261469364166,
+    "ic_by_year": {
+      "2024": 0.0149,
+      "2025": 0.0021,
+      "2026": 0.0166
+    }
+  },
+  "best_params": {
+    "cell": "rnn",
+    "hidden": 32,
+    "layers": 1,
+    "dropout": 0.1,
+    "lr": 0.0003,
+    "loss": "mse"
+  },
+  "mode": "wf",
+  "device": "cuda",
+  "lookback": 20,
+  "target": "y_win",
+  "epochs_walk_forward": 22,
+  "seeds": 3,
+  "retrain_every": 63,
+  "window_years": null,
+  "walk_forward": [
+    {
+      "refit_date": "2024-07-01",
+      "predict_to": "2024-09-27",
+      "train_rows": 317820,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 22.8
+    },
+    {
+      "refit_date": "2024-09-30",
+      "predict_to": "2024-12-31",
+      "train_rows": 332814,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 23.8
+    },
+    {
+      "refit_date": "2025-01-01",
+      "predict_to": "2025-04-01",
+      "train_rows": 347808,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 24.8
+    },
+    {
+      "refit_date": "2025-04-02",
+      "predict_to": "2025-07-03",
+      "train_rows": 362802,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 25.9
+    },
+    {
+      "refit_date": "2025-07-04",
+      "predict_to": "2025-10-03",
+      "train_rows": 377796,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 26.9
+    },
+    {
+      "refit_date": "2025-10-06",
+      "predict_to": "2026-01-05",
+      "train_rows": 392790,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 28.0
+    },
+    {
+      "refit_date": "2026-01-06",
+      "predict_to": "2026-04-09",
+      "train_rows": 407784,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 29.1
+    },
+    {
+      "refit_date": "2026-04-10",
+      "predict_to": "2026-07-13",
+      "train_rows": 422778,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 30.1
+    },
+    {
+      "refit_date": "2026-07-14",
+      "predict_to": "2026-08-21",
+      "train_rows": 437772,
+      "epochs": 22,
+      "seeds": 3,
+      "seconds": 31.2
+    }
+  ]
+}

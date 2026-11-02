@@ -1,0 +1,58 @@
+{
+  "model": "random_forest",
+  "features": [
+    "mom_252d",
+    "dist_high_60d",
+    "dist_ma200",
+    "ma50_ma200_ratio",
+    "ma50_slope_20d",
+    "trend_consistency_60d",
+    "log_traded_value_med_20d",
+    "rel_volume_20d",
+    "resid_ret_60d",
+    "yz_vol_20d",
+    "variance_ratio_5_60",
+    "cmf_20",
+    "r_b",
+    "bench_ret_20d",
+    "bench_mom_60d",
+    "bench_mom_120d",
+    "bench_vol_20d",
+    "bench_vol_60d",
+    "bench_drawdown_252d"
+  ],
+  "stock_features": [
+    "mom_252d",
+    "dist_high_60d",
+    "dist_ma200",
+    "ma50_ma200_ratio",
+    "ma50_slope_20d",
+    "trend_consistency_60d",
+    "log_traded_value_med_20d",
+    "rel_volume_20d",
+    "resid_ret_60d",
+    "yz_vol_20d",
+    "variance_ratio_5_60",
+    "cmf_20"
+  ],
+  "market_features": [
+    "r_b",
+    "bench_ret_20d",
+    "bench_mom_60d",
+    "bench_mom_120d",
+    "bench_vol_20d",
+    "bench_vol_60d",
+    "bench_drawdown_252d"
+  ],
+  "transform": "stock: per-date percentile rank centred to [-0.5, 0.5], NaN -> 0; market: raw, NaN -> train median",
+  "target_default": "y_win",
+  "eval_target": "y_raw",
+  "selection_rf_params": {
+    "n_estimators": 300,
+    "max_depth": 8,
+    "min_samples_leaf": 200,
+    "max_features": 0.33,
+    "random_state": 42
+  },
+  "fit_on_every_kth_train_date": 5
+}

@@ -1,0 +1,139 @@
+{
+  "model": "Ridge",
+  "val": {
+    "n_dates": 349,
+    "n_rows": 83062,
+    "ic_mean": 0.10509333314577657,
+    "ic_std": 0.13890965041684025,
+    "ic_tstat_nw": 4.00656795362142,
+    "icir_ann": 2.685517708942014,
+    "ic_hit_rate": 0.7994269340974212,
+    "q5_minus_q1_20d": 0.037527299081558906,
+    "q5_minus_q1_tstat_nw": 5.59096874350486,
+    "q5_minus_q1_ann_gross": 0.4728439684276422,
+    "ic_by_year": {
+      "2023": 0.1265,
+      "2024": 0.054
+    }
+  },
+  "test": {
+    "n_dates": 513,
+    "n_rows": 122094,
+    "ic_mean": 0.009995616951212623,
+    "ic_std": 0.10653763249815856,
+    "ic_tstat_nw": 0.6382424677850635,
+    "icir_ann": 0.333036501626966,
+    "ic_hit_rate": 0.5477582846003899,
+    "q5_minus_q1_20d": 0.009390580691590643,
+    "q5_minus_q1_tstat_nw": 2.2576688712527355,
+    "q5_minus_q1_ann_gross": 0.11832131671404211,
+    "ic_by_year": {
+      "2024": 0.0275,
+      "2025": 0.0053,
+      "2026": 0.0026
+    }
+  },
+  "best_params": {
+    "alpha": 10000.0,
+    "target": "y_win"
+  },
+  "mode": "wf",
+  "retrain_every": 63,
+  "window_years": null,
+  "coefficients": {
+    "log_traded_value_med_20d": -0.009669999592006207,
+    "vol_ret_corr_20d": -0.0005910000181756914,
+    "price_volume_interaction": -0.0004149999876972288,
+    "log_volume": 0.0039889998733997345,
+    "mom_252d": 0.004550000187009573,
+    "adx_14": 0.0016720000421628356,
+    "corr_60d": 6.299999949987978e-05,
+    "ma50_slope_20d": 0.0004830000107176602,
+    "resid_ret_60d": -0.000623999978415668,
+    "ret_5d": -0.0006430000066757202,
+    "intraday_return": 4.8999998398358e-05,
+    "trend_consistency_60d": 0.00014099999680183828,
+    "mfi_14": -9.999999747378752e-06,
+    "overnight_gap_mean_20d": 0.00010900000052060932,
+    "mom_accel_20d": -0.0001939999929163605,
+    "overnight_ret": 0.0008140000281855464,
+    "yz_vol_20d": 0.0012809999752789736,
+    "gap_vol_20d": -0.0018660000059753656,
+    "rel_volume_20d": -0.0007719999994151294,
+    "volume_trend_20_60": 0.0008169999928213656
+  },
+  "walk_forward": [
+    {
+      "refit_date": "2024-07-01",
+      "predict_to": "2024-09-27",
+      "train_from": "2019-01-01",
+      "train_to": "2024-05-30",
+      "train_rows": 317953,
+      "seconds": 0.0
+    },
+    {
+      "refit_date": "2024-09-30",
+      "predict_to": "2024-12-31",
+      "train_from": "2019-01-01",
+      "train_to": "2024-08-30",
+      "train_rows": 332947,
+      "seconds": 0.0
+    },
+    {
+      "refit_date": "2025-01-01",
+      "predict_to": "2025-04-01",
+      "train_from": "2019-01-01",
+      "train_to": "2024-12-02",
+      "train_rows": 347941,
+      "seconds": 0.0
+    },
+    {
+      "refit_date": "2025-04-02",
+      "predict_to": "2025-07-03",
+      "train_from": "2019-01-01",
+      "train_to": "2025-02-28",
+      "train_rows": 362935,
+      "seconds": 0.0
+    },
+    {
+      "refit_date": "2025-07-04",
+      "predict_to": "2025-10-03",
+      "train_from": "2019-01-01",
+      "train_to": "2025-06-05",
+      "train_rows": 377929,
+      "seconds": 0.0
+    },
+    {
+      "refit_date": "2025-10-06",
+      "predict_to": "2026-01-05",
+      "train_from": "2019-01-01",
+      "train_to": "2025-09-04",
+      "train_rows": 392923,
+      "seconds": 0.0
+    },
+    {
+      "refit_date": "2026-01-06",
+      "predict_to": "2026-04-09",
+      "train_from": "2019-01-01",
+      "train_to": "2025-12-05",
+      "train_rows": 407917,
+      "seconds": 0.0
+    },
+    {
+      "refit_date": "2026-04-10",
+      "predict_to": "2026-07-13",
+      "train_from": "2019-01-01",
+      "train_to": "2026-03-09",
+      "train_rows": 422911,
+      "seconds": 0.0
+    },
+    {
+      "refit_date": "2026-07-14",
+      "predict_to": "2026-08-21",
+      "train_from": "2019-01-01",
+      "train_to": "2026-06-12",
+      "train_rows": 437905,
+      "seconds": 0.0
+    }
+  ]
+}
